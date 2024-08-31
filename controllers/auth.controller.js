@@ -33,5 +33,6 @@ module.exports.signIn = async (req, res) => {
 module.exports.logOut = async (req, res) => {
   res.cookie("jwt", "", { maxAge: 1 });
   console.log("deconnecter");
+  
   res.redirect("/");
 };
