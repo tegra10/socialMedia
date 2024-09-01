@@ -1,6 +1,7 @@
 const express = require("express");
 
 const userRoutes = require("./routes/user.routes");
+const postRoutes = require("./routes/post.routes");
 const cookieParser = require("cookie-parser");
 const { checkUser, requireAuth } = require("./middlewares/auth.middleware");
 const dotent = require("dotenv").config();
@@ -22,5 +23,6 @@ app.get("/jwtid", requireAuth, async (req, res) => {
 });
 
 app.use("/api/user", userRoutes);
+app.use("/api/post", postRoutes);
 
 app.listen(port, () => console.log("serveur lancer sur le port " + port));
