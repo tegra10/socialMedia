@@ -6,13 +6,14 @@ const userSchema = mongoose.Schema(
     pseudo: {
       type: String,
       required: true,
-      minLength: 3,
+      minlength: 3,
       unique: true,
       trim: true,
     },
     email: {
       type: String,
       required: true,
+      unique: true,
       validate: [isEmail],
       lowercase: true,
       trim: true,
