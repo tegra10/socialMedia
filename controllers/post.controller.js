@@ -28,5 +28,40 @@ module.exports.createPost = async (req, res) => {
     return res.status(400).send(err);
   }
 };
-module.exports.updatePost = async (req, res) => {};
-module.exports.deletePost = async (req, res) => {};
+module.exports.updatePost = async (req, res) => {
+  if (!ObjectId.isValid(req.params.id))
+    return res.status(400).send("ID unknown " + req.params.id);
+  const updatedRecored = {
+    message: req.body.message,
+  };
+
+  try {
+    const postUpdate = await postModel.findOneAndUpdate(
+      {
+        _id: req.params.id,
+      },
+      {
+        $set: updatedRecored,
+      },
+      { new: true, upsert: true, setDefaultOnInsert: true }
+    );
+
+    if (!postUpdate) {
+      return res.status(404).send({ message: "utilisater non trouvé" });
+    }
+
+    res.status(201).json(postUpdate);
+  } catch (err) {
+    return res.status(500).send("l'erreur est " + err);
+  }
+};
+
+module.exports.deletePost = async (req, res) => {
+  if (!ObjectId.isValid(req.params.id))
+    return res.status(400).send("ID unknown " + req.params.id);
+
+  userModel.findByIdAndDelete(req.params.id, (err, docs) => {
+    if (!err) res.send(docs);
+    else console.log("DELETE ERROR" + err);
+  });
+};
