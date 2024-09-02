@@ -3,11 +3,6 @@ const userModel = require("../models/user.model");
 const ObjectId = require("mongoose").Types.ObjectId;
 
 module.exports.readPost = async (req, res) => {
-  //   postModel.find((err, docs) => {
-  //     if (!err) return res.send(docs);
-  //     else console.log("Error to get data: " + err);
-  //   });
-
   const post = await postModel.find().select();
   res.status(200).json(post);
 };
@@ -60,8 +55,16 @@ module.exports.deletePost = async (req, res) => {
   if (!ObjectId.isValid(req.params.id))
     return res.status(400).send("ID unknown " + req.params.id);
 
-  userModel.findByIdAndDelete(req.params.id, (err, docs) => {
-    if (!err) res.send(docs);
-    else console.log("DELETE ERROR" + err);
-  });
+  try {
+    const post = await postModel.findByIdAndDelete(req.params.id);
+
+    if (!post) {
+      res.status(400).json({ message: "le post n'existe pas" });
+    }
+
+    res.status(200).json({ message: "Successfuly delete " });
+  } catch (err) {
+    console.log("l'erreur est " + err);
+    res.status(500).json({ message: "message error" });
+  }
 };
