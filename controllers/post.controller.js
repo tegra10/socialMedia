@@ -62,9 +62,81 @@ module.exports.deletePost = async (req, res) => {
       res.status(400).json({ message: "le post n'existe pas" });
     }
 
-    res.status(200).json({ message: "Successfuly delete " });
+    res.status(200).json({ message: "Successfuly delete" });
   } catch (err) {
     console.log("l'erreur est " + err);
     res.status(500).json({ message: "message error" });
+  }
+};
+module.exports.likePost = async (req, res) => {
+  console.log("Request Body:", req.body); // Pour vérifier le corps de la requête
+
+  if (!ObjectId.isValid(req.params.id))
+    return res.status(400).send("Post ID unknown: " + req.params.id);
+
+  if (!req.body.id) {
+    return res.status(400).send("User ID is missing");
+  }
+
+  if (!ObjectId.isValid(req.body.id))
+    return res.status(400).send("Invalid User ID: " + req.body.id);
+
+  try {
+    const likers = await postModel.findOneAndUpdate(
+      { _id: req.params.id },
+      { $addToSet: { likers: req.body.id } },
+      { new: true }
+    );
+
+    if (!likers) return res.status(400).send("Post ID unknown");
+
+    const liked = await userModel.findOneAndUpdate(
+      { _id: req.body.id },
+      { $addToSet: { likes: req.params.id } },
+      { new: true }
+    );
+
+    if (!liked) {
+      console.error("User ID not found:", req.body.id);
+      return res.status(404).json({ message: "User ID not found" });
+    }
+
+    return res.status(200).json({ liked, likers });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message || "Internal Server Error" });
+  }
+};
+
+module.exports.unLikePost = async (req, res) => {
+  console.log("Request Body:", req.body); // Pour vérifier le corps de la requête
+
+  if (!ObjectId.isValid(req.params.id))
+    return res.status(400).send("Post ID unknown: " + req.params.id);
+
+  try {
+    const likers = await postModel.findOneAndUpdate(
+      { _id: req.params.id },
+      { $pull: { likers: req.body.id } },
+      { new: true }
+    );
+
+    if (!likers) return res.status(400).send("Post ID unknown");
+
+    const liked = await userModel.findOneAndUpdate(
+      { _id: req.body.id },
+      { $pull: { likes: req.params.id } },
+      { new: true }
+    );
+
+    if (!liked) {
+      console.error("User ID not found:", req.body.id);
+      return res.status(404).json({ message: "User ID not found" });
+    }
+
+    return res.status(200).json({ liked, likers });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message || "Internal Server Error" });
   }
 };
