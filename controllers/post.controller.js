@@ -13,7 +13,7 @@ module.exports.createPost = async (req, res) => {
     video: req.body.video,
     likers: [],
     comments: [],
-  });
+  }).sort({ createdAt: -1 });
 
   try {
     const post = await newPost.save();
@@ -138,5 +138,88 @@ module.exports.unLikePost = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message || "Internal Server Error" });
+  }
+};
+
+module.exports.commentPost = async (req, res) => {
+  if (!ObjectId.isValid(req.params.id))
+    return res.status(400).send("Post ID unknown: " + req.params.id);
+
+  try {
+    const updatePost = await postModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: {
+          comments: {
+            commenterId: req.body.commenterId,
+            commenterPseudo: req.body.commenterPseudo,
+            text: req.body.text,
+            timestamp: new Date().getTime(),
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatePost) return res.status(404).send("post not found");
+
+    return res.status(200).json({ updatePost });
+  } catch (err) {
+    console.log(err);
+    res.status(400).send(err);
+  }
+};
+module.exports.editCommentPost = async (req, res) => {
+  if (!ObjectId.isValid(req.params.id)) {
+    return res.status(400).send("Post ID unknown: " + req.params.id);
+  }
+
+  try {
+    const post = await postModel.findById(req.params.id); // Enlève le callback ici
+
+    if (!post) {
+      return res.status(404).send("Post not found");
+    }
+
+    const theComment = post.comments.find((comment) =>
+      comment._id.equals(req.body.commentId)
+    );
+
+    if (!theComment) {
+      return res.status(404).send("Comment not found");
+    }
+
+    theComment.text = req.body.text;
+
+    await post.save(); // Enlève le callback ici également
+    return res.status(200).send(post);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send(err);
+  }
+};
+
+module.exports.deleteCommentPost = async (req, res) => {
+  if (!ObjectId.isValid(req.params.id))
+    return res.status(400).send("Post ID unknown: " + req.params.id);
+
+  try {
+    const post = await postModel.findByIdAndUpdate(
+      req.params.id,
+      {
+        $pull: {
+          comments: { _id: req.body.commentId },
+        },
+      },
+      { new: true }
+    );
+
+    if (!post)
+      return res.status(500).json({ message: "Commentaire non trouver" });
+
+    return res.status(200).json(post);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send(err);
   }
 };
