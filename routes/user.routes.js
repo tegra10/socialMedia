@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const sharp = require("sharp"); // Assurez-vous d'installer sharp via npm
 
 const { signUp, signIn, logOut } = require("../controllers/auth.controller");
 const {
@@ -16,20 +17,41 @@ const { uploadPicture } = require("../controllers/upload.controller");
 const router = express.Router();
 
 // Configuration de Multer pour gérer les téléchargements de fichiers
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Assurez-vous que le dossier 'uploads' existe dans votre projet
-    const uploadPath = path.join(__dirname, "../public/uploads"); // Adaptez le chemin si nécessaire
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, uniqueSuffix + ext);
-  },
-});
+const storage = multer.memoryStorage(); // Utiliser memoryStorage pour traiter l'image avant de l'enregistrer
 
-const upload = multer({ storage });
+const fileFilter = (req, file, cb) => {
+  const filetypes = /jpeg|jpg|png/; // Formats autorisés
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = filetypes.test(file.mimetype);
+
+  if (extname && mimetype) {
+    return cb(null, true);
+  } else {
+    cb(new Error("Only .png, .jpg and .jpeg format allowed!"), false);
+  }
+};
+
+const upload = multer({ storage, fileFilter });
+
+// Route pour télécharger un fichier
+router.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    const outputPath = path.join(
+      __dirname,
+      "../client/public/uploads/profil",
+      `${req.body.name}.jpg`
+    );
+
+    // Convertir l'image en JPG et enregistrer
+    await sharp(req.file.buffer).jpeg().toFile(outputPath);
+    // Appeler votre fonction uploadPicture si nécessaire
+    // await uploadPicture(req, res); // Décommentez si vous avez besoin d'appeler cette fonction
+
+    res.status(200).json({ message: "File uploaded successfully!" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Routes d'authentification
 router.post("/register", signUp);
@@ -43,8 +65,6 @@ router.put("/:id", updateUser);
 router.delete("/:id", deleteUser);
 router.patch("/follow/:id", follow);
 router.patch("/unfollow/:id", unFollow);
-
-// Route pour télécharger un fichier
-router.post("/upload", upload.single("file"), uploadPicture);
+module;
 
 module.exports = router;
