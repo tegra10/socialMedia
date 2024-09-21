@@ -1,30 +1,13 @@
 const postModel = require("../models/post.model");
 const userModel = require("../models/user.model");
 const ObjectId = require("mongoose").Types.ObjectId;
-const path = require("path");
-const sharp = require("sharp"); // Assurez-vous d'installer sharp via npm
 
 module.exports.readPost = async (req, res) => {
   const post = await postModel.find().select();
   res.status(200).json(post);
 };
-module.exports.createPost = async (req, res) => {
-  const newPost = new postModel({
-    posterId: req.body.posterId,
-    message: req.body.message,
-    video: req.body.video,
-    likers: [],
-    comments: [],
-  }).sort({ createdAt: -1 });
 
-  try {
-    const post = await newPost.save();
-    return res.status(201).json(post);
-  } catch (err) {
-    console.log(err);
-    return res.status(400).send(err);
-  }
-};
+// module.exports.createPost =
 module.exports.updatePost = async (req, res) => {
   if (!ObjectId.isValid(req.params.id))
     return res.status(400).send("ID unknown " + req.params.id);
