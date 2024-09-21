@@ -1,6 +1,8 @@
 const postModel = require("../models/post.model");
 const userModel = require("../models/user.model");
 const ObjectId = require("mongoose").Types.ObjectId;
+const path = require("path");
+const sharp = require("sharp"); // Assurez-vous d'installer sharp via npm
 
 module.exports.readPost = async (req, res) => {
   const post = await postModel.find().select();

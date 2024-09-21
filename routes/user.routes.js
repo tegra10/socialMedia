@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const sharp = require("sharp"); // Assurez-vous d'installer sharp via npm
-
+const UserModel = require("../models/user.model");
 const { signUp, signIn, logOut } = require("../controllers/auth.controller");
 const {
   getAllUsers,
@@ -12,7 +12,7 @@ const {
   follow,
   unFollow,
 } = require("../controllers/user.controller");
-const { uploadPicture } = require("../controllers/upload.controller");
+const { uploadErrors } = require("../utils/errors.utils");
 
 const router = express.Router();
 
@@ -27,7 +27,7 @@ const fileFilter = (req, file, cb) => {
   if (extname && mimetype) {
     return cb(null, true);
   } else {
-    cb(new Error("Only .png, .jpg and .jpeg format allowed!"), false);
+    cb(new Error("Format incorrect"), false);
   }
 };
 
@@ -36,6 +36,13 @@ const upload = multer({ storage, fileFilter });
 // Route pour télécharger un fichier
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
+    const userId = req.body.userId; // Assurez-vous que l'ID de l'utilisateur est passé dans le corps de la requête
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found!" });
+    }
+
     const outputPath = path.join(
       __dirname,
       "../client/public/uploads/profil",
@@ -44,12 +51,18 @@ router.post("/upload", upload.single("file"), async (req, res) => {
 
     // Convertir l'image en JPG et enregistrer
     await sharp(req.file.buffer).jpeg().toFile(outputPath);
+    user.picture = `uploads/profil/${req.body.name}.jpg`; // Modifiez cela selon votre structure de document
+    await user.save();
     // Appeler votre fonction uploadPicture si nécessaire
     // await uploadPicture(req, res); // Décommentez si vous avez besoin d'appeler cette fonction
+    console.log("File uploaded successfully!");
 
-    res.status(200).json({ message: "File uploaded successfully!" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(200).json({ user });
+  } catch (err) {
+    const errors = uploadErrors(err);
+    console.log(err);
+
+    res.status(500).json(errors);
   }
 });
 
