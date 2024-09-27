@@ -1,6 +1,5 @@
 const {
   readPost,
-  createPost,
   updatePost,
   deletePost,
   likePost,
@@ -19,15 +18,26 @@ const router = require("express").Router();
 // Configuration de Multer pour gérer les téléchargements de fichiers
 const storage = multer.memoryStorage(); // Utiliser memoryStorage pour traiter l'image avant de l'enregistrer
 
+const MAX_SIZE = 5 * 1024 * 1024; // 5Mo
+
 const fileFilter = (req, file, cb) => {
   const filetypes = /jpeg|jpg|png/; // Formats autorisés
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = filetypes.test(file.mimetype);
 
-  if (extname && mimetype) {
+  try {
+    if (!extname || !mimetype) {
+      return cb(new Error("Format incorrect"), false);
+    }
+
+    // Vérification de la taille
+    if (file.size > MAX_SIZE) {
+      return cb(new Error("Fichier trop volumineux"), false);
+    }
+
     return cb(null, true);
-  } else {
-    cb(new Error("Format incorrect"), false);
+  } catch (err) {
+    console.log(err);
   }
 };
 
